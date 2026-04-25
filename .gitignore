@@ -20,7 +20,7 @@ nofx-server
 .gocache/
 
 # Runtime data
-data/
+/data/
 *.db
 decision_logs/
 backup/
