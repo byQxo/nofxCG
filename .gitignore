@@ -1,0 +1,77 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# AI tools
+.claude/
+CLAUDE.md
+
+# Build artifacts
+nofx
+nofx-auto
+nofx_test
+nofx-server
+*.exe
+*.test
+*.out
+
+# Go cache
+.gocache/
+
+# Runtime data
+data/
+*.db
+decision_logs/
+backup/
+config/keys/
+secrets/
+
+# Sensitive files
+.env
+config.json
+configbak.json
+*.key
+*.pem
+*.p12
+*.pfx
+*.enc
+rsa_key*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.backup
+.cache/
+.gh-config/
+
+# Node.js
+node_modules/
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.uv/
+uv.lock
+.pytest_cache/
+.coverage
+htmlcov/
+.hypothesis/
+.mypy_cache/
+.pyre/
+
+# Notebook / misc
+.ipynb_checkpoints
+.python-version
+.DS_Store
+Thumbs.db
+PR_DESCRIPTION.md
