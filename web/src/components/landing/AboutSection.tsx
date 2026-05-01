@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Terminal, Shield, Cpu, BarChart3 } from 'lucide-react'
 import { t, Language } from '../../i18n/translations'
+import { PROJECT_LINKS } from '../../constants/branding'
 
 interface AboutSectionProps {
   language: Language
@@ -127,8 +128,8 @@ export default function AboutSection({ language }: AboutSectionProps) {
 
               {/* Terminal Content */}
               <div className="p-6 font-mono text-sm space-y-2">
-                <div style={{ color: '#5E6673' }}>$ git clone https://github.com/NoFxAiOS/nofx.git</div>
-                <div style={{ color: '#5E6673' }}>$ cd nofx && chmod +x start.sh</div>
+                <div style={{ color: '#5E6673' }}>$ git clone {PROJECT_LINKS.repo}.git</div>
+                <div style={{ color: '#5E6673' }}>$ cd nofxCG && chmod +x start.sh</div>
                 <div style={{ color: '#5E6673' }}>$ ./start.sh start --build</div>
                 <div className="pt-2" style={{ color: '#F0B90B' }}>
                   ✓ {t('startupMessages1', language)}

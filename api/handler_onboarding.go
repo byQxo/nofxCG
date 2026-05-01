@@ -10,13 +10,13 @@ import (
 	"strings"
 
 	"nofx/logger"
+	"nofx/mcp/payment"
+	"nofx/wallet"
 
 	gethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/gin-gonic/gin"
 )
 
-// Deprecated: 旧的新手自动钱包流程已退出主路径。
-// 保留以下结构体与辅助函数，仅用于回滚旧逻辑或迁移历史数据时参考。
 type beginnerOnboardingResponse struct {
 	Address           string `json:"address"`
 	PrivateKey        string `json:"private_key"`
@@ -41,20 +41,114 @@ type currentBeginnerWalletResponse struct {
 }
 
 func (s *Server) handleBeginnerOnboarding(c *gin.Context) {
-	// 中文说明：
-	// 旧的新手自动钱包流程已经退出离线模式主路径。即使未来有人误将该路由重新接回，
-	// 这里也必须直接拒绝，避免再次生成、保存或回传钱包私钥。
-	c.JSON(http.StatusGone, gin.H{
-		"error": "离线模式已停用新手自动钱包流程",
-	})
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing user context"})
+		return
+	}
+
+	privateKey, address, configuredModelID, reusedExisting, err := s.resolveBeginnerWallet(userID)
+	if err != nil {
+		logger.Errorf("Failed to resolve beginner wallet for user %s: %v", userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to prepare beginner wallet"})
+		return
+	}
+
+	if !reusedExisting {
+		if err := s.store.AIModel().Update(userID, "claw402", true, privateKey, "", payment.DefaultClaw402Model); err != nil {
+			logger.Errorf("Failed to save beginner claw402 config for user %s: %v", userID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save beginner model configuration"})
+			return
+		}
+
+		configuredModelID, err = s.findConfiguredClaw402ModelID(userID)
+		if err != nil {
+			logger.Warnf("Could not resolve configured claw402 model id for user %s: %v", userID, err)
+		}
+	}
+
+	os.Setenv("CLAW402_WALLET_KEY", privateKey)
+	os.Setenv("CLAW402_WALLET_ADDRESS", address)
+	os.Setenv("CLAW402_DEFAULT_MODEL", payment.DefaultClaw402Model)
+
+	envSaved, envPath, envErr := persistBeginnerWalletEnv(privateKey, address)
+	resp := beginnerOnboardingResponse{
+		Address:           address,
+		PrivateKey:        privateKey,
+		Chain:             "base",
+		Asset:             "USDC",
+		Provider:          "claw402",
+		DefaultModel:      payment.DefaultClaw402Model,
+		ConfiguredModelID: configuredModelID,
+		BalanceUSDC:       wallet.QueryUSDCBalanceStr(address),
+		EnvSaved:          envSaved,
+		EnvPath:           envPath,
+		ReusedExisting:    reusedExisting,
+	}
+	if envErr != nil {
+		resp.EnvWarning = envErr.Error()
+		logger.Warnf("Beginner wallet env persistence warning for user %s: %v", userID, envErr)
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
 
 func (s *Server) handleCurrentBeginnerWallet(c *gin.Context) {
-	// 中文说明：
-	// 该接口原本会暴露自动钱包状态。离线认证改造后，前端已经不再依赖它，
-	// 因此这里统一返回停用响应，防止后续误接入后重新泄露敏感钱包信息。
-	c.JSON(http.StatusGone, gin.H{
-		"error": "离线模式已停用新手自动钱包流程",
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "missing user context"})
+		return
+	}
+	claw402Status := checkClaw402Health()
+
+	models, err := s.store.AIModel().List(userID)
+	if err != nil {
+		logger.Errorf("Failed to load current beginner wallet for user %s: %v", userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load current wallet"})
+		return
+	}
+
+	for _, model := range models {
+		if model == nil || model.Provider != "claw402" {
+			continue
+		}
+
+		privateKey := strings.TrimSpace(model.APIKey.String())
+		if privateKey == "" {
+			continue
+		}
+
+		address, addrErr := walletAddressFromPrivateKey(privateKey)
+		if addrErr != nil {
+			logger.Warnf("Failed to derive current beginner wallet for user %s: %v", userID, addrErr)
+			continue
+		}
+
+		c.JSON(http.StatusOK, currentBeginnerWalletResponse{
+			Found:         true,
+			Address:       address,
+			BalanceUSDC:   wallet.QueryUSDCBalanceStr(address),
+			Source:        "model",
+			Claw402Status: claw402Status,
+		})
+		return
+	}
+
+	address := strings.TrimSpace(os.Getenv("CLAW402_WALLET_ADDRESS"))
+	if address != "" {
+		c.JSON(http.StatusOK, currentBeginnerWalletResponse{
+			Found:         true,
+			Address:       address,
+			BalanceUSDC:   wallet.QueryUSDCBalanceStr(address),
+			Source:        "env",
+			Claw402Status: claw402Status,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, currentBeginnerWalletResponse{
+		Found:         false,
+		Claw402Status: claw402Status,
 	})
 }
 
@@ -94,7 +188,7 @@ func (s *Server) resolveBeginnerWallet(userID string) (privateKey string, addres
 				if adoptErr := s.store.AIModel().AdoptModel(orphan.ID, userID); adoptErr != nil {
 					logger.Warnf("Failed to adopt orphan claw402 wallet for user %s: %v", userID, adoptErr)
 				} else {
-					logger.Infof("Adopted orphan claw402 wallet %s for new user %s (address: %s)", orphan.ID, userID, addr)
+					logger.Infof("✓ Adopted orphan claw402 wallet %s for new user %s (address: %s)", orphan.ID, userID, addr)
 					return existingKey, addr, orphan.ID, true, nil
 				}
 			}
@@ -160,7 +254,7 @@ func persistBeginnerWalletEnv(privateKey string, address string) (bool, string, 
 		if err := upsertEnvFile(path, map[string]string{
 			"CLAW402_WALLET_KEY":     privateKey,
 			"CLAW402_WALLET_ADDRESS": address,
-			"CLAW402_DEFAULT_MODEL":  "glm-5",
+			"CLAW402_DEFAULT_MODEL":  payment.DefaultClaw402Model,
 		}); err != nil {
 			lastErr = err
 			continue

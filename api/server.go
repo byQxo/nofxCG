@@ -90,6 +90,14 @@ func (s *Server) setupRoutes() {
 		s.route(api, "GET", "/config", "Get system configuration", s.handleGetSystemConfig)
 
 		// Wallet validation (no authentication required — used by frontend config form)
+		api.POST("/wallet/validate", s.handleWalletValidate)
+		api.POST("/wallet/generate", s.handleWalletGenerate)
+
+		// Crypto related endpoints (no authentication required, not exposed to bot)
+		api.GET("/crypto/config", s.cryptoHandler.HandleGetCryptoConfig)
+		api.GET("/crypto/public-key", s.cryptoHandler.HandleGetPublicKey)
+		api.POST("/crypto/decrypt", s.cryptoHandler.HandleDecryptSensitiveData)
+
 		// Public competition data (no authentication required)
 		s.route(api, "GET", "/traders", "Public trader list", s.handlePublicTraderList)
 		s.route(api, "GET", "/competition", "Public competition data", s.handlePublicCompetition)
@@ -113,11 +121,25 @@ func (s *Server) setupRoutes() {
 			s.route(authGroup, "POST", "/refresh", "刷新访问令牌", s.handleRefreshToken)
 			s.route(authGroup, "GET", "/status", "获取登录状态", s.handleAuthStatus)
 		}
+		s.route(api, "POST", "/register", "Offline mode: registration disabled", s.handleRegister)
+		s.route(api, "POST", "/login", "Offline mode: password login disabled", s.handleLogin)
+		s.route(api, "POST", "/reset-password", "Offline mode: password reset disabled", s.handleResetPassword)
+		s.route(api, "POST", "/reset-account", "Offline mode: account reset disabled", s.handleResetAccount)
 
 		// Routes requiring authentication
 		protected := api.Group("/", s.authMiddleware())
 		{
 			s.route(protected, "POST", "/auth/logout", "退出登录", s.handleLogout)
+			s.route(protected, "POST", "/logout", "退出登录（兼容旧路由）", s.handleLogout)
+			s.route(protected, "POST", "/onboarding/beginner", "Prepare beginner claw402 wallet and default model", s.handleBeginnerOnboarding)
+			s.route(protected, "GET", "/onboarding/beginner/current", "Get current beginner claw402 wallet", s.handleCurrentBeginnerWallet)
+			s.route(protected, "GET", "/agent/preferences", "Get persistent agent preferences", s.handleGetAgentPreferences)
+			s.route(protected, "POST", "/agent/preferences", "Create persistent agent preference", s.handleCreateAgentPreference)
+			s.route(protected, "DELETE", "/agent/preferences/:id", "Delete persistent agent preference", s.handleDeleteAgentPreference)
+
+			s.routeWithSchema(protected, "PUT", "/user/password", "Offline mode: password change disabled",
+				`Body: {"new_password":"<string, min 8 chars>"}`,
+				s.handleChangePassword)
 
 			// Server IP query (requires authentication, for whitelist configuration)
 			s.route(protected, "GET", "/server-ip", "Get server public IP (for exchange whitelist)", s.handleGetServerIP)
@@ -358,8 +380,10 @@ func (s *Server) handleHealth(c *gin.Context) {
 // handleGetSystemConfig Get system configuration (configuration that client needs to know)
 func (s *Server) handleGetSystemConfig(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"initialized": true,
-		"auth_mode":   "admin_key",
+		"initialized":      true,
+		"auth_mode":        "admin_key",
+		"btc_eth_leverage": 10,
+		"altcoin_leverage": 5,
 	})
 }
 
@@ -528,12 +552,14 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			bootstrap.WriteJSONError(c, http.StatusUnauthorized, "未登录或登录已失效")
+			c.Abort()
 			return
 		}
 
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
 			bootstrap.WriteJSONError(c, http.StatusUnauthorized, "未登录或登录已失效")
+			c.Abort()
 			return
 		}
 
@@ -542,6 +568,7 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 		if err != nil {
 			logger.Warnf("[Auth] Invalid access token: %s", bootstrap.SanitizeErrorMessage(err))
 			bootstrap.WriteJSONError(c, http.StatusUnauthorized, "未登录或登录已失效")
+			c.Abort()
 			return
 		}
 

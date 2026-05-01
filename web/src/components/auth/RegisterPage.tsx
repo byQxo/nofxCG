@@ -10,6 +10,7 @@ import { getSystemConfig } from '../../lib/config'
 import { DeepVoidBackground } from '../common/DeepVoidBackground'
 import { RegistrationDisabled } from './RegistrationDisabled'
 import { WhitelistFullPage } from '../common/WhitelistFullPage'
+import { BRAND_INFO } from '../../constants/branding'
 
 export function RegisterPage() {
   const { language } = useLanguage()
@@ -138,7 +139,7 @@ export function RegisterPage() {
               <div className="absolute -inset-2 bg-nofx-gold/20 rounded-full blur-xl animate-pulse"></div>
               <img
                 src="/icons/nofx.svg"
-                alt="NoFx Logo"
+                alt={`${BRAND_INFO.name} logo`}
                 className="w-16 h-16 object-contain relative z-10 opacity-90"
               />
             </div>

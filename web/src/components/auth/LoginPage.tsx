@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { DeepVoidBackground } from '../common/DeepVoidBackground'
 import { LanguageSwitcher } from '../common/LanguageSwitcher'
+import { BRAND_INFO } from '../../constants/branding'
 
 export function LoginPage() {
   const { language } = useLanguage()
@@ -55,7 +56,7 @@ export function LoginPage() {
                 <div className="absolute -inset-3 rounded-full bg-nofx-gold/15 blur-2xl" />
                 <img
                   src="/icons/nofx.svg"
-                  alt="NOFX"
+                  alt={`${BRAND_INFO.name} logo`}
                   className="relative z-10 h-14 w-14"
                 />
               </div>
@@ -149,7 +150,7 @@ export function LoginPage() {
                     : 'Signing in...'
                   : isZh
                     ? '进入系统'
-                    : 'Enter NOFX'}
+                    : `Enter ${BRAND_INFO.name}`}
               </button>
             </form>
           </div>

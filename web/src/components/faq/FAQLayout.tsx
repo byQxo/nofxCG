@@ -7,6 +7,7 @@ import { FAQSidebar } from './FAQSidebar'
 import { FAQContent } from './FAQContent'
 import { faqCategories } from '../../data/faqData'
 import type { FAQCategory } from '../../data/faqData'
+import { DOC_LINKS, PROJECT_LINKS } from '../../constants/branding'
 
 interface FAQLayoutProps {
   language: Language
@@ -146,7 +147,7 @@ export function FAQLayout({ language }: FAQLayoutProps) {
           </p>
           <div className="flex items-center justify-center gap-4">
             <a
-              href="https://github.com/NoFxAiOS/nofx"
+              href={PROJECT_LINKS.repo}
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
@@ -159,7 +160,7 @@ export function FAQLayout({ language }: FAQLayoutProps) {
               GitHub
             </a>
             <a
-              href="https://t.me/nofx_dev_community"
+              href={DOC_LINKS.readmeZh}
               target="_blank"
               rel="noopener noreferrer"
               className="px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
@@ -168,7 +169,7 @@ export function FAQLayout({ language }: FAQLayoutProps) {
                 color: '#0B0E11',
               }}
             >
-              {t('community', language)}
+              中文 README
             </a>
           </div>
         </div>

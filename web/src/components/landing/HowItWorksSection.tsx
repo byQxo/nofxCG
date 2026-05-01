@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Download, Rocket, TrendingUp, AlertTriangle } from 'lucide-react'
 import { t, Language } from '../../i18n/translations'
+import { PROJECT_LINKS } from '../../constants/branding'
 
 interface HowItWorksSectionProps {
   language: Language
@@ -15,7 +16,7 @@ export default function HowItWorksSection({ language }: HowItWorksSectionProps) 
       desc: language === 'zh'
         ? '在你的服务器上运行一条命令即可完成部署'
         : 'Run a single command on your server to deploy',
-      code: 'curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bash',
+      code: `curl -fsSL ${PROJECT_LINKS.installScript} | bash`,
     },
     {
       icon: Rocket,

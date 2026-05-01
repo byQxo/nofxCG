@@ -1,17 +1,24 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Play, Github, Zap } from 'lucide-react'
+import { ArrowRight, BookOpen, Github, Play, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { t, Language } from '../../i18n/translations'
 import { useGitHubStats } from '../../hooks/useGitHubStats'
 import { useCounterAnimation } from '../../hooks/useCounterAnimation'
-import { OFFICIAL_LINKS } from '../../constants/branding'
+import {
+  DOC_LINKS,
+  PROJECT_LINKS,
+  REPO_COORDINATES,
+} from '../../constants/branding'
 
 interface HeroSectionProps {
   language: Language
 }
 
 export default function HeroSection({ language }: HeroSectionProps) {
-  const { stars, daysOld, isLoading } = useGitHubStats('NoFxAiOS', 'nofx')
+  const { stars, daysOld, isLoading } = useGitHubStats(
+    REPO_COORDINATES.owner,
+    REPO_COORDINATES.repo
+  )
   const animatedStars = useCounterAnimation({
     start: 0,
     end: stars,
@@ -161,7 +168,7 @@ export default function HeroSection({ language }: HeroSectionProps) {
           </motion.div>
 
           <motion.a
-            href={OFFICIAL_LINKS.github}
+            href={PROJECT_LINKS.repo}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-lg transition-all"
@@ -179,6 +186,27 @@ export default function HeroSection({ language }: HeroSectionProps) {
           >
             <Github className="w-5 h-5" />
             {t('viewSourceCode', language)}
+          </motion.a>
+
+          <motion.a
+            href={DOC_LINKS.readmeZh}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center gap-3 px-8 py-4 rounded-xl font-bold text-lg transition-all"
+            style={{
+              background: 'rgba(240, 185, 11, 0.08)',
+              color: '#FCD535',
+              border: '1px solid rgba(240, 185, 11, 0.2)',
+            }}
+            whileHover={{
+              scale: 1.02,
+              background: 'rgba(240, 185, 11, 0.12)',
+              borderColor: 'rgba(240, 185, 11, 0.35)',
+            }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <BookOpen className="w-5 h-5" />
+            中文 README
           </motion.a>
         </motion.div>
 

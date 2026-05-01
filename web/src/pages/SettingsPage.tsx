@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Cpu,
   MessageCircle,
+  Pencil,
   Plus,
   Shield,
   User,
@@ -25,6 +26,20 @@ import { TelegramConfigModal } from '../components/trader/TelegramConfigModal'
 import type { AIModel, Exchange } from '../types'
 
 type Tab = 'account' | 'models' | 'exchanges' | 'telegram'
+
+function configBadge(label: string, active: boolean) {
+  return (
+    <span
+      className={`text-[11px] px-2 py-0.5 rounded-full ${
+        active
+          ? 'bg-emerald-500/10 text-emerald-300'
+          : 'bg-zinc-800 text-zinc-500'
+      }`}
+    >
+      {label}
+    </span>
+  )
+}
 
 export function SettingsPage() {
   const { user } = useAuth()
@@ -48,31 +63,48 @@ export function SettingsPage() {
 
   const isZh = language === 'zh'
 
+  const refreshModelConfigs = async () => {
+    const [configs, supported] = await Promise.all([
+      api.getModelConfigs(),
+      api.getSupportedModels(),
+    ])
+    setConfiguredModels(configs)
+    setSupportedModels(supported)
+  }
+
+  const refreshExchangeConfigs = async () => {
+    const refreshed = await api.getExchangeConfigs()
+    setExchanges(refreshed)
+  }
+
   useEffect(() => {
     if (activeTab === 'models') {
-      Promise.all([api.getModelConfigs(), api.getSupportedModels()])
-        .then(([configs, supported]) => {
-          setConfiguredModels(configs)
-          setSupportedModels(supported)
-        })
-        .catch((error) => {
-          toast.error(
-            error instanceof Error ? error.message : 'Failed to load AI models'
-          )
-        })
+      refreshModelConfigs().catch((error) => {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to load AI models'
+        )
+      })
     }
 
     if (activeTab === 'exchanges') {
-      api
-        .getExchangeConfigs()
-        .then(setExchanges)
-        .catch((error) => {
-          toast.error(
-            error instanceof Error ? error.message : 'Failed to load exchanges'
-          )
-        })
+      refreshExchangeConfigs().catch((error) => {
+        toast.error(
+          error instanceof Error ? error.message : 'Failed to load exchanges'
+        )
+      })
     }
   }, [activeTab])
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      refreshModelConfigs().catch(() => {})
+      refreshExchangeConfigs().catch(() => {})
+    }
+
+    window.addEventListener('agent-config-refresh', handleRefresh)
+    return () =>
+      window.removeEventListener('agent-config-refresh', handleRefresh)
+  }, [])
 
   const handleSwitchMode = (nextMode: UserMode) => {
     if (nextMode === userMode) {
@@ -98,49 +130,103 @@ export function SettingsPage() {
     customModelName?: string
   ) => {
     try {
-      await api.updateModelConfigs({
-        models: {
-          [modelId]: {
-            enabled: true,
-            api_key: apiKey || '',
-            custom_api_url: customApiUrl || '',
-            custom_model_name: customModelName || '',
-          },
-        },
-      })
+      const existingModel = configuredModels.find(
+        (model) => model.id === modelId
+      )
+      const modelTemplate = supportedModels.find(
+        (model) => model.id === modelId
+      )
+      const modelToUpdate = existingModel || modelTemplate
+      if (!modelToUpdate) {
+        toast.error(isZh ? '未找到模型配置' : 'Model not found')
+        return
+      }
 
-      setConfiguredModels(await api.getModelConfigs())
+      let updatedModels: AIModel[]
+      if (existingModel) {
+        updatedModels = configuredModels.map((model) =>
+          model.id === modelId
+            ? {
+                ...model,
+                apiKey,
+                customApiUrl: customApiUrl || '',
+                customModelName: customModelName || '',
+                enabled: true,
+              }
+            : model
+        )
+      } else {
+        updatedModels = [
+          ...configuredModels,
+          {
+            ...modelToUpdate,
+            apiKey,
+            customApiUrl: customApiUrl || '',
+            customModelName: customModelName || '',
+            enabled: true,
+          },
+        ]
+      }
+
+      const request = {
+        models: Object.fromEntries(
+          updatedModels.map((model) => [
+            model.provider,
+            {
+              enabled: model.enabled,
+              api_key: model.apiKey || '',
+              custom_api_url: model.customApiUrl || '',
+              custom_model_name: model.customModelName || '',
+            },
+          ])
+        ),
+      }
+
+      await api.updateModelConfigs(request)
+      await refreshModelConfigs()
       setShowModelModal(false)
       setEditingModel(null)
       toast.success(isZh ? '模型配置已保存' : 'Model configuration saved')
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to save model config'
-      )
+    } catch {
+      toast.error(isZh ? '保存模型配置失败' : 'Failed to save model config')
     }
   }
 
   const handleDeleteModel = async (modelId: string) => {
     try {
-      await api.updateModelConfigs({
-        models: {
-          [modelId]: {
-            enabled: false,
-            api_key: '',
-            custom_api_url: '',
-            custom_model_name: '',
-          },
-        },
-      })
+      const updatedModels = configuredModels.map((model) =>
+        model.id === modelId
+          ? {
+              ...model,
+              apiKey: '',
+              customApiUrl: '',
+              customModelName: '',
+              enabled: false,
+            }
+          : model
+      )
 
-      setConfiguredModels(await api.getModelConfigs())
+      const request = {
+        models: Object.fromEntries(
+          updatedModels.map((model) => [
+            model.provider,
+            {
+              enabled: model.enabled,
+              api_key: model.apiKey || '',
+              custom_api_url: model.customApiUrl || '',
+              custom_model_name: model.customModelName || '',
+            },
+          ])
+        ),
+      }
+
+      await api.updateModelConfigs(request)
+      await refreshModelConfigs()
       setShowModelModal(false)
       setEditingModel(null)
       toast.success(isZh ? '模型配置已移除' : 'Model configuration removed')
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to remove model config'
-      )
+    } catch {
+      toast.error(isZh ? '移除模型配置失败' : 'Failed to remove model config')
     }
   }
 
@@ -202,17 +288,17 @@ export function SettingsPage() {
         })
       }
 
-      setExchanges(await api.getExchangeConfigs())
+      await refreshExchangeConfigs()
       setShowExchangeModal(false)
       setEditingExchange(null)
-      toast.success(
-        isZh ? '交易所配置已保存' : 'Exchange configuration saved'
-      )
+      toast.success(isZh ? '交易所配置已保存' : 'Exchange configuration saved')
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Failed to save exchange config'
+          : isZh
+            ? '保存交易所配置失败'
+            : 'Failed to save exchange config'
       )
     }
   }
@@ -220,7 +306,7 @@ export function SettingsPage() {
   const handleDeleteExchange = async (exchangeId: string) => {
     try {
       await api.deleteExchange(exchangeId)
-      setExchanges(await api.getExchangeConfigs())
+      await refreshExchangeConfigs()
       setShowExchangeModal(false)
       setEditingExchange(null)
       toast.success(isZh ? '交易所账户已删除' : 'Exchange account deleted')
@@ -228,14 +314,24 @@ export function SettingsPage() {
       toast.error(
         error instanceof Error
           ? error.message
-          : 'Failed to delete exchange account'
+          : isZh
+            ? '删除交易所账户失败'
+            : 'Failed to delete exchange account'
       )
     }
   }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'account', label: isZh ? '账户' : 'Account', icon: <User size={16} /> },
-    { key: 'models', label: isZh ? 'AI 模型' : 'AI Models', icon: <Cpu size={16} /> },
+    {
+      key: 'account',
+      label: isZh ? '账户' : 'Account',
+      icon: <User size={16} />,
+    },
+    {
+      key: 'models',
+      label: isZh ? 'AI 模型' : 'AI Models',
+      icon: <Cpu size={16} />,
+    },
     {
       key: 'exchanges',
       label: isZh ? '交易所' : 'Exchanges',
@@ -249,7 +345,10 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className="min-h-screen px-4 pb-12 pt-20" style={{ background: '#0B0E11' }}>
+    <div
+      className="min-h-screen px-4 pb-12 pt-20"
+      style={{ background: '#0B0E11' }}
+    >
       <div className="mx-auto max-w-2xl">
         <h1 className="mb-6 text-xl font-bold text-white">
           {isZh ? '设置' : 'Settings'}
@@ -295,9 +394,20 @@ export function SettingsPage() {
                       ? '当前实例使用管理员密钥登录，不再提供账号密码注册和修改密码功能。'
                       : 'This instance now uses an offline admin key. Email/password flows are disabled.'}
                   </p>
-                  <p>{isZh ? '重置管理员密钥：' : 'Reset admin key:'} <code>./nofx reset-admin-key</code></p>
-                  <p>{isZh ? '轮换根密钥并重加密数据：' : 'Rotate root key and re-encrypt data:'} <code>./nofx reset-root-key</code></p>
-                  <p>{isZh ? '恢复备份：' : 'Restore backup:'} <code>./nofx restore-backup &lt;timestamp&gt;</code></p>
+                  <p>
+                    {isZh ? '重置管理员密钥：' : 'Reset admin key:'}{' '}
+                    <code>./nofx reset-admin-key</code>
+                  </p>
+                  <p>
+                    {isZh
+                      ? '轮换根密钥并重加密数据：'
+                      : 'Rotate root key and re-encrypt data:'}{' '}
+                    <code>./nofx reset-root-key</code>
+                  </p>
+                  <p>
+                    {isZh ? '恢复备份：' : 'Restore backup:'}{' '}
+                    <code>./nofx restore-backup &lt;timestamp&gt;</code>
+                  </p>
                 </div>
               </div>
 
@@ -371,7 +481,7 @@ export function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-zinc-400">
-                  {configuredModels.filter((model) => model.configured).length}{' '}
+                  {configuredModels.length}{' '}
                   {isZh ? '个模型已配置' : 'configured models'}
                 </p>
                 <button
@@ -409,27 +519,40 @@ export function SettingsPage() {
                           <p className="text-sm font-medium text-white">
                             {model.name}
                           </p>
-                          <p className="text-xs text-zinc-500">
-                            {model.provider}
-                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <p className="text-xs text-zinc-500">
+                              {model.provider}
+                            </p>
+                            {configBadge('API Key', !!model.has_api_key)}
+                            {model.customModelName
+                              ? configBadge('Custom Model', true)
+                              : null}
+                            {model.customApiUrl
+                              ? configBadge('Base URL', true)
+                              : null}
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs ${
-                            model.configured
+                            model.enabled
                               ? 'bg-emerald-500/10 text-emerald-400'
                               : 'bg-zinc-700 text-zinc-500'
                           }`}
                         >
-                          {model.configured
+                          {model.enabled
                             ? isZh
-                              ? '已配置'
-                              : 'Configured'
+                              ? '已启用'
+                              : 'Active'
                             : isZh
-                              ? '未配置'
-                              : 'Empty'}
+                              ? '已停用'
+                              : 'Inactive'}
                         </span>
+                        <Pencil
+                          size={14}
+                          className="text-zinc-600 transition-colors group-hover:text-zinc-400"
+                        />
                       </div>
                     </button>
                   ))}
@@ -442,7 +565,8 @@ export function SettingsPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-zinc-400">
-                  {exchanges.length} {isZh ? '个交易账户' : 'connected accounts'}
+                  {exchanges.length}{' '}
+                  {isZh ? '个交易账户' : 'connected accounts'}
                 </p>
                 <button
                   onClick={() => {
@@ -481,32 +605,32 @@ export function SettingsPage() {
                           <p className="text-sm font-medium text-white">
                             {exchange.account_name || exchange.name}
                           </p>
-                          <p className="text-xs capitalize text-zinc-500">
-                            {exchange.exchange_type || exchange.type}
-                          </p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <p className="text-xs capitalize text-zinc-500">
+                              {exchange.exchange_type || exchange.type}
+                            </p>
+                            {configBadge('API Key', !!exchange.has_api_key)}
+                            {configBadge('Secret', !!exchange.has_secret_key)}
+                            {exchange.has_passphrase
+                              ? configBadge('Passphrase', true)
+                              : null}
+                            {exchange.hyperliquidWalletAddr
+                              ? configBadge('Wallet', true)
+                              : null}
+                            {exchange.has_aster_private_key
+                              ? configBadge('Aster Key', true)
+                              : null}
+                            {exchange.has_lighter_private_key ||
+                            exchange.has_lighter_api_key_private_key
+                              ? configBadge('Lighter Key', true)
+                              : null}
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs ${
-                            exchange.configured
-                              ? 'bg-emerald-500/10 text-emerald-400'
-                              : 'bg-zinc-700 text-zinc-500'
-                          }`}
-                        >
-                          {exchange.configured
-                            ? isZh
-                              ? '已配置'
-                              : 'Configured'
-                            : isZh
-                              ? '未完成'
-                              : 'Incomplete'}
-                        </span>
-                        <ChevronRight
-                          size={14}
-                          className="text-zinc-600 transition-colors group-hover:text-zinc-400"
-                        />
-                      </div>
+                      <ChevronRight
+                        size={14}
+                        className="text-zinc-600 transition-colors group-hover:text-zinc-400"
+                      />
                     </button>
                   ))}
                 </div>

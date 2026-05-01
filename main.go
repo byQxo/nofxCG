@@ -1,6 +1,10 @@
 package main
 
 import (
+	"errors"
+	"log/slog"
+	"net/http"
+	nofxiagent "nofx/agent"
 	"nofx/api"
 	"nofx/auth"
 	"nofx/bootstrap"
@@ -11,12 +15,14 @@ import (
 	_ "nofx/mcp/provider"
 	"nofx/store"
 	"nofx/telegram"
+	"nofx/telemetry"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
@@ -51,6 +57,8 @@ func main() {
 	}
 	defer st.Close()
 
+	initInstallationID(st)
+
 	securityRuntime, err := bootstrap.InitSecurity(cfg, st)
 	if err != nil {
 		logger.Fatalf("安全初始化失败: %v", err)
@@ -79,9 +87,15 @@ func main() {
 	telegramReloadCh := make(chan struct{}, 1)
 	server.SetTelegramReloadCh(telegramReloadCh)
 
+	agentLogger := slog.Default()
+	nofxiAgent := nofxiagent.New(traderManager, st, nil, agentLogger)
+	nofxiAgent.Start()
+	defer nofxiAgent.Stop()
+	server.RegisterAgentHandler(nofxiagent.NewWebHandler(nofxiAgent, agentLogger))
+
 	go startSessionCleanup(st)
 	go func() {
-		if err := server.Start(); err != nil {
+		if err := server.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatalf("启动 API 服务失败: %v", err)
 		}
 	}()
@@ -94,6 +108,9 @@ func main() {
 	<-quit
 
 	logger.Info("收到退出信号，正在关闭系统。")
+	if err := server.Shutdown(); err != nil {
+		logger.Warnf("关闭 API 服务失败: %v", err)
+	}
 	traderManager.StopAll()
 }
 
@@ -161,6 +178,24 @@ func newStore(cfg *config.Config) (*store.Store, error) {
 		DBName:   cfg.DBName,
 		SSLMode:  cfg.DBSSLMode,
 	})
+}
+
+func initInstallationID(st *store.Store) {
+	const key = "installation_id"
+
+	installationID, err := st.GetSystemConfig(key)
+	if err != nil {
+		logger.Warnf("加载安装 ID 失败: %v", err)
+	}
+
+	if installationID == "" {
+		installationID = uuid.New().String()
+		if err := st.SetSystemConfig(key, installationID); err != nil {
+			logger.Warnf("保存安装 ID 失败: %v", err)
+		}
+	}
+
+	telemetry.SetInstallationID(installationID)
 }
 
 // startSessionCleanup 定期清理已过期或已吊销的持久化会话，防止表无限膨胀。

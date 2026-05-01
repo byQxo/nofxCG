@@ -1,8 +1,13 @@
 import { motion } from 'framer-motion'
-import { ArrowRight, Shield, Activity, CircuitBoard, Wifi, Globe, Zap, Star, GitFork, Users, MessageCircle } from 'lucide-react'
+import { ArrowRight, BookOpen, Shield, Activity, CircuitBoard, Wifi, Globe, Zap, Star, GitFork, Users, FileText } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useGitHubStats } from '../../../hooks/useGitHubStats'
 import AgentTerminal from '../brand/AgentTerminal'
+import {
+    DOC_LINKS,
+    PROJECT_LINKS,
+    REPO_COORDINATES,
+} from '../../../constants/branding'
 
 export default function TerminalHero() {
 
@@ -169,7 +174,7 @@ export default function TerminalHero() {
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-nofx-gold opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-nofx-gold"></span>
                         </span>
-                        <span className="text-xs font-mono text-nofx-gold tracking-widest">NOFX OPEN-SOURCE AGENTIC OS</span>
+                        <span className="text-xs font-mono text-nofx-gold tracking-widest">NOFXCG OPEN-SOURCE TRADING FORK</span>
                     </motion.div>
 
                     {/* Main Title - Massive & Impactful */}
@@ -181,8 +186,8 @@ export default function TerminalHero() {
                         </h1>
 
                         <p className="max-w-xl text-zinc-200 md:text-zinc-400 text-lg mb-6 font-light leading-relaxed drop-shadow-md">
-                            The World's First Open-Source Agentic Trading OS.
-                            Deploy autonomous high-frequency trading agents powered by advanced LLMs.
+                            A self-hosted open-source trading fork derived from upstream NOFX.
+                            Deploy autonomous high-frequency trading agents while keeping the repository, docs, and compliance flow in your own fork.
                         </p>
                     </div>
 
@@ -229,6 +234,19 @@ export default function TerminalHero() {
                             </span>
                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                         </button>
+
+                        <a
+                            href={DOC_LINKS.readmeZh}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative overflow-hidden border border-nofx-gold/30 bg-black/40 text-nofx-gold px-8 py-4 font-bold font-mono tracking-wider hover:scale-105 transition-transform duration-200 text-center"
+                            style={{ clipPath: 'polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%)' }}
+                        >
+                            <span className="relative z-10 flex items-center gap-2 justify-center">
+                                中文 README <BookOpen className="w-4 h-4" />
+                            </span>
+                            <div className="absolute inset-0 bg-nofx-gold/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                        </a>
                     </div>
 
                     {/* Community Stats Row */}
@@ -290,10 +308,11 @@ export default function TerminalHero() {
     )
 }
 
-import { OFFICIAL_LINKS } from '../../../constants/branding'
-
 function CommunityStats() {
-    const { stars, forks, contributors, isLoading, error } = useGitHubStats('NoFxAiOS', 'nofx')
+    const { stars, forks, contributors, isLoading, error } = useGitHubStats(
+        REPO_COORDINATES.owner,
+        REPO_COORDINATES.repo
+    )
 
     const stats = [
         {
@@ -301,28 +320,28 @@ function CommunityStats() {
             value: isLoading ? '...' : (error ? '10,500+' : stars.toLocaleString()),
             icon: Star,
             color: 'text-yellow-400',
-            href: OFFICIAL_LINKS.github
+            href: PROJECT_LINKS.repo
         },
         {
             label: 'FORKS',
             value: isLoading ? '...' : (error ? '2,800+' : forks.toLocaleString()),
             icon: GitFork,
             color: 'text-blue-400',
-            href: `${OFFICIAL_LINKS.github}/fork`
+            href: PROJECT_LINKS.forks
         },
         {
             label: 'CONTRIBUTORS',
             value: isLoading ? '...' : (contributors > 0 ? contributors : '50+'),
             icon: Users,
             color: 'text-green-400',
-            href: `${OFFICIAL_LINKS.github}/graphs/contributors`
+            href: PROJECT_LINKS.contributors
         },
         {
-            label: 'DEV COMMUNITY',
-            value: '6,600+',
-            icon: MessageCircle,
-            color: 'text-blue-500',
-            href: OFFICIAL_LINKS.telegram
+            label: 'LICENSE',
+            value: 'AGPL-3.0',
+            icon: FileText,
+            color: 'text-purple-400',
+            href: DOC_LINKS.license
         }
     ]
 

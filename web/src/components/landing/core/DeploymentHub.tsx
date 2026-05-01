@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Terminal, Copy, Check, ChevronRight, Server, Command, Shield } from 'lucide-react'
+import { PROJECT_LINKS } from '../../../constants/branding'
 
 export default function DeploymentHub() {
     const [copied, setCopied] = useState(false)
-    const installCmd = "curl -fsSL https://raw.githubusercontent.com/NoFxAiOS/nofx/main/install.sh | bash"
+    const installCmd = `curl -fsSL ${PROJECT_LINKS.installScript} | bash`
 
     const handleCopy = () => {
         navigator.clipboard.writeText(installCmd)

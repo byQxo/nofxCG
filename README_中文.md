@@ -1,17 +1,17 @@
-[首页](README.md) | [中文](README_中文.md) | [English](README_EN.md)
+[中文](README_中文.md) | [English](README.md)
 
 <div align="center">
   <img src="web/public/icons/nofx.svg" alt="nofxCG 标志" width="96" />
   <h1>nofxCG</h1>
-  <p><strong>基于 NOFX 的自托管安全增强分支</strong></p>
+  <p><strong>基于上游 NOFX 的自托管安全增强分支</strong></p>
   <p>更适合单机、内网、私有化部署和长期自主运维</p>
   <p>🏠 自托管优先 · 🔐 离线管理员登录 · 🗝️ 本地根密钥 · ♻️ 可恢复运维 · 🤝 欢迎协作</p>
 </div>
 
-> 提示：这是基于 [NOFX](https://github.com/NoFxAiOS/nofx) 的独立衍生分支，不是上游官方版本。
+> 提示：本仓库是基于上游 NOFX 的独立衍生分支，不是上游官方版本。
 
 - 当前仓库：[byQxo/nofxCG](https://github.com/byQxo/nofxCG)
-- 上游仓库：[NoFxAiOS/nofx](https://github.com/NoFxAiOS/nofx)
+- 上游血统：衍生自 `NOFX`
 
 ## 👀 这份 README 适合谁
 
@@ -374,24 +374,11 @@ cd web && npm test
 
 ## ☕️ 开发者联系与赞赏
 
-如果你希望直接联系开发者，反馈问题、交流想法或讨论合作，可以扫描下面的个人微信二维码。
+如果你认可这个分支的改造方向，欢迎通过下面的地址自愿支持项目维护与开发。
 
-如果你认可这个分支的改造方向，也欢迎使用赞赏码自愿支持项目维护与开发。
-
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <img src="Photo/Developer%20Contact%20Information.jpg" alt="开发者个人微信联系码" width="88%" />
-      <br />
-      <sub>开发者联系码：用于项目交流、问题反馈与合作沟通</sub>
-    </td>
-    <td align="center" width="50%">
-      <img src="Photo/WeChat%20Reward%20Code.jpg" alt="开发者微信赞赏码" width="88%" />
-      <br />
-      <sub>微信赞赏码：完全自愿，仅用于支持项目维护与开发</sub>
-    </td>
-  </tr>
-</table>
+- 捐赠方式：`TRON / TRC20 地址`
+- 地址：`TGwxdHhB6EUY8sQvSknvVdbqnaS4RijDgd`
+- 风险提示：`仅支持 TRC20 网络，转账前请自行核对地址与网络`
 
 > 说明：赞赏完全自愿，不影响任何人在 `AGPL-3.0` 下对本项目的使用、复制、修改、部署、分发和获取对应源码的权利。
 

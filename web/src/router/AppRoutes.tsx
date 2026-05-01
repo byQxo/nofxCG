@@ -18,6 +18,7 @@ import { AITradersPage } from '../components/trader/AITradersPage'
 import { FAQPage } from '../pages/FAQPage'
 import { LandingPage } from '../pages/LandingPage'
 import { DataPage } from '../pages/DataPage'
+import { AgentChatPage } from '../pages/AgentChatPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { StrategyMarketPage } from '../pages/StrategyMarketPage'
 import { StrategyStudioPage } from '../pages/StrategyStudioPage'
@@ -426,18 +427,36 @@ export function AppRoutes() {
             )
           }
         />
-        <Route path={ROUTES.register} element={<Navigate to={ROUTES.login} replace />} />
+        <Route
+          path={ROUTES.register}
+          element={<Navigate to={ROUTES.login} replace />}
+        />
         <Route
           path={ROUTES.resetPassword}
           element={<Navigate to={ROUTES.login} replace />}
         />
-        <Route path={ROUTES.setup} element={<Navigate to={ROUTES.login} replace />} />
+        <Route
+          path={ROUTES.setup}
+          element={<Navigate to={ROUTES.login} replace />}
+        />
         <Route
           path={ROUTES.faq}
           element={
             <AppChrome currentPage="faq" showFooter={false} wrapInMain={false}>
               <FAQPage />
             </AppChrome>
+          }
+        />
+        <Route
+          path={ROUTES.agent}
+          element={
+            isAuthenticated ? (
+              <AppChrome currentPage="agent" showFooter={false}>
+                <AgentChatPage />
+              </AppChrome>
+            ) : (
+              <Navigate to={ROUTES.login} replace />
+            )
           }
         />
         <Route
@@ -460,7 +479,10 @@ export function AppRoutes() {
             )
           }
         />
-        <Route path={ROUTES.welcome} element={<Navigate to={ROUTES.traders} replace />} />
+        <Route
+          path={ROUTES.welcome}
+          element={<Navigate to={ROUTES.traders} replace />}
+        />
         <Route
           path={ROUTES.competition}
           element={
@@ -483,7 +505,13 @@ export function AppRoutes() {
         />
         <Route
           path={ROUTES.traders}
-          element={isAuthenticated ? <TradersRoute /> : <Navigate to={ROUTES.login} replace />}
+          element={
+            isAuthenticated ? (
+              <TradersRoute />
+            ) : (
+              <Navigate to={ROUTES.login} replace />
+            )
+          }
         />
         <Route
           path={ROUTES.dashboard}

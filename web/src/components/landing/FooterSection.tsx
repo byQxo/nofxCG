@@ -1,6 +1,18 @@
-import { Github, Send, ExternalLink } from 'lucide-react'
+import {
+  CircleHelp,
+  ExternalLink,
+  FileText,
+  Github,
+  ShieldAlert,
+} from 'lucide-react'
 import { t, Language } from '../../i18n/translations'
-import { OFFICIAL_LINKS } from '../../constants/branding'
+import {
+  BRAND_INFO,
+  DOC_LINKS,
+  LICENSE_NOTICE,
+  PROJECT_LINKS,
+  UPSTREAM_ATTRIBUTION,
+} from '../../constants/branding'
 
 interface FooterSectionProps {
   language: Language
@@ -9,56 +21,64 @@ interface FooterSectionProps {
 export default function FooterSection({ language }: FooterSectionProps) {
   const links = {
     social: [
-      { name: 'GitHub', href: OFFICIAL_LINKS.github, icon: Github },
-      {
-        name: 'X (Twitter)',
-        href: OFFICIAL_LINKS.twitter,
-        icon: () => (
-          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-          </svg>
-        ),
-      },
-      { name: 'Telegram', href: OFFICIAL_LINKS.telegram, icon: Send },
+      { name: 'Repository', href: PROJECT_LINKS.repo, icon: Github },
+      { name: 'Issues', href: PROJECT_LINKS.issues, icon: CircleHelp },
+      { name: '中文 README', href: DOC_LINKS.readmeZh, icon: FileText },
     ],
     resources: [
       {
         name: language === 'zh' ? '文档' : 'Documentation',
-        href: 'https://github.com/NoFxAiOS/nofx/blob/main/README.md',
+        href: DOC_LINKS.readmeEn,
       },
-      { name: 'Issues', href: 'https://github.com/NoFxAiOS/nofx/issues' },
-      { name: 'Pull Requests', href: 'https://github.com/NoFxAiOS/nofx/pulls' },
+      { name: '中文 README', href: DOC_LINKS.readmeZh },
+      { name: 'License', href: DOC_LINKS.license },
+      { name: 'Disclaimer', href: DOC_LINKS.disclaimer },
     ],
     supporters: [
       { name: 'Binance', href: 'https://www.binance.com/join?ref=NOFXENG' },
       { name: 'Bybit', href: 'https://partner.bybit.com/b/83856' },
       { name: 'OKX', href: 'https://www.okx.com/join/1865360' },
-      { name: 'Bitget', href: 'https://www.bitget.com/referral/register?from=referral&clacCode=c8a43172' },
+      {
+        name: 'Bitget',
+        href: 'https://www.bitget.com/referral/register?from=referral&clacCode=c8a43172',
+      },
       { name: 'Gate.io', href: 'https://www.gatenode.xyz/share/VQBGUAxY' },
       { name: 'KuCoin', href: 'https://www.kucoin.com/r/broker/CXEV7XKK' },
-      { name: 'Hyperliquid', href: 'https://app.hyperliquid.xyz/join/AITRADING' },
-      { name: 'Aster DEX', href: 'https://www.asterdex.com/en/referral/fdfc0e' },
+      {
+        name: 'Hyperliquid',
+        href: 'https://app.hyperliquid.xyz/join/AITRADING',
+      },
+      {
+        name: 'Aster DEX',
+        href: 'https://www.asterdex.com/en/referral/fdfc0e',
+      },
       { name: 'Lighter', href: 'https://app.lighter.xyz/?referral=68151432' },
     ],
   }
 
   return (
-    <footer style={{ background: '#0B0E11', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+    <footer
+      style={{
+        background: '#0B0E11',
+        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
-        {/* Top Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-10 mb-8 md:mb-12">
-          {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-4">
-              <img src="/icons/nofx.svg" alt="NOFX Logo" className="w-8 h-8" />
+              <img
+                src="/icons/nofx.svg"
+                alt={`${BRAND_INFO.name} logo`}
+                className="w-8 h-8"
+              />
               <span className="text-xl font-bold" style={{ color: '#EAECEF' }}>
-                NOFX
+                {BRAND_INFO.name}
               </span>
             </div>
             <p className="text-sm mb-6" style={{ color: '#5E6673' }}>
               {t('futureStandardAI', language)}
             </p>
-            {/* Social Icons */}
             <div className="flex items-center gap-3">
               {links.social.map((link) => (
                 <a
@@ -79,9 +99,11 @@ export default function FooterSection({ language }: FooterSectionProps) {
             </div>
           </div>
 
-          {/* Links */}
           <div>
-            <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>
+            <h4
+              className="text-sm font-semibold mb-4"
+              style={{ color: '#EAECEF' }}
+            >
               {t('links', language)}
             </h4>
             <ul className="space-y-3">
@@ -101,9 +123,11 @@ export default function FooterSection({ language }: FooterSectionProps) {
             </ul>
           </div>
 
-          {/* Resources */}
           <div>
-            <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>
+            <h4
+              className="text-sm font-semibold mb-4"
+              style={{ color: '#EAECEF' }}
+            >
               {t('resources', language)}
             </h4>
             <ul className="space-y-3">
@@ -124,9 +148,11 @@ export default function FooterSection({ language }: FooterSectionProps) {
             </ul>
           </div>
 
-          {/* Supporters */}
           <div>
-            <h4 className="text-sm font-semibold mb-4" style={{ color: '#EAECEF' }}>
+            <h4
+              className="text-sm font-semibold mb-4"
+              style={{ color: '#EAECEF' }}
+            >
               {t('supporters', language)}
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -146,13 +172,21 @@ export default function FooterSection({ language }: FooterSectionProps) {
           </div>
         </div>
 
-        {/* Bottom Section */}
         <div
           className="pt-6 text-center text-xs"
-          style={{ color: '#5E6673', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
+          style={{
+            color: '#5E6673',
+            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+          }}
         >
           <p className="mb-2">{t('footerTitle', language)}</p>
           <p style={{ color: '#3C4249' }}>{t('footerWarning', language)}</p>
+          <div className="mt-3 flex items-center justify-center gap-2">
+            <ShieldAlert className="w-3.5 h-3.5 text-nofx-gold" />
+            <span>
+              {UPSTREAM_ATTRIBUTION} {LICENSE_NOTICE}
+            </span>
+          </div>
         </div>
       </div>
     </footer>
